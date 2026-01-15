@@ -1,0 +1,21 @@
+
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    container_name: ecommerce-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DEBUG=True
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
