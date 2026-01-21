@@ -3,3 +3,4 @@ djangorestframework==3.16.1
 python-dotenv==1.2.1
 pillow==12.1.0
 django-cors-headers==4.9.0
+drf-spectacular==0.29.0
