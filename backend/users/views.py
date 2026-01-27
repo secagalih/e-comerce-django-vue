@@ -1,15 +1,25 @@
 # Create your views here.
-from django.contrib.auth import login
 from django.contrib.auth.hashers import check_password
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import User
-from .seralizers import UserSerializer
+from .seralizers import LoginSerializer, UserSerializer
 
 
+@extend_schema(
+    request=UserSerializer,
+    responses={
+        201: UserSerializer,
+        400: UserSerializer,
+    },
+    description="Register a new user account",
+    summary="User Registration",
+    tags=["Users"],
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def register(request):
@@ -25,8 +35,7 @@ def register(request):
     """
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
-        user = serializer.save()
-        login(request, user)
+        serializer.save()
         return Response(
             {"message": "User registered successfully", "user": serializer.data},
             status=status.HTTP_201_CREATED,
@@ -34,11 +43,22 @@ def register(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    request=LoginSerializer,
+    responses={
+        200: UserSerializer,
+        400: {"type": "object", "properties": {"error": {"type": "string"}}},
+        401: {"type": "object", "properties": {"error": {"type": "string"}}},
+    },
+    description="Login a user with email and password",
+    summary="User Login",
+    tags=["Users"],
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login_view(request):
     """
-    Register a new user.
+    Login a user with email and password.
     POST /api/users/login/
 
     Request body:
@@ -69,9 +89,7 @@ def login_view(request):
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
-    login(request, user)
     serializer = UserSerializer(user)
-
     return Response(
         {"message": "Login successful", "user": serializer.data},
         status=status.HTTP_200_OK,
@@ -80,6 +98,10 @@ def login_view(request):
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
+
+    def get_queryset(self):
+        """Return queryset filtered to current user only."""
+        return User.objects.filter(id=self.request.user.id)
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def get_user(self, request):

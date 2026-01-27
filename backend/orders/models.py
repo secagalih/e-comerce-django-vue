@@ -1,7 +1,9 @@
-from django.db import models
-from users.models import User
-from products.models import Product
 import uuid
+
+from django.db import models
+from products.models import Product
+from users.models import User
+
 # Create your models here.
 
 class Order(models.Model):
@@ -20,7 +22,7 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Order {self.id} - {self.user.username}"
+        return f"Order {self.id} - {self.user.email}"
     
   
 class OrderItem(models.Model):
