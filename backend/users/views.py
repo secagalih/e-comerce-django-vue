@@ -5,6 +5,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 from .seralizers import LoginSerializer, UserSerializer
@@ -88,12 +89,36 @@ def login_view(request):
             {"error": "Invalid email or password"},
             status=status.HTTP_401_UNAUTHORIZED,
         )
-
+    refresh = RefreshToken.for_user(user)
     serializer = UserSerializer(user)
     return Response(
-        {"message": "Login successful", "user": serializer.data},
+        {
+            "message": "Login successful",
+            "user": serializer.data,
+            "tokens": {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            },
+        },
         status=status.HTTP_200_OK,
     )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    """
+    Logout user by blacklisting the refresh token.
+    """
+    try:
+        refresh_token = request.data.get("refresh_token")
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        return Response(
+            {"message": "Logout successful"}, status=status.HTTP_205_RESET_CONTENT
+        )
+    except Exception:
+        return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserViewSet(viewsets.ModelViewSet):
